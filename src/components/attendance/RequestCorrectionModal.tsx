@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { X, Clock, Calendar, AlertCircle, Send } from "lucide-react";
+import { X, Clock, Calendar, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../api/axios";
 
@@ -170,28 +170,6 @@ const RequestCorrectionModal: React.FC<RequestCorrectionModalProps> = ({
               </span>
             </div>
           )}
-
-          {isQuotaExceeded && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-800 flex items-start gap-2.5 animate-fade-in">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold">Monthly Limit Reached</p>
-                <p className="mt-0.5">
-                  You have reached the maximum allowed limit of <strong>{monthlyQuota?.max || 10} attendance corrections</strong> for this month. You cannot submit any further correction requests.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
-            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold">Official Shift: 10:00 AM – 6:00 PM (Max 5 Corrections / Month)</p>
-              <p className="mt-0.5 text-amber-800">
-                If your attendance was marked <strong>ABSENT</strong> (clocked in after 10:30 AM or exceeded 5 monthly late buffer arrivals), please apply for correction with a valid reason. Once approved by Admin, your status is regularized to <strong>PRESENT</strong>, preventing this day from becoming <strong>Leave Without Pay (LWP)</strong>.
-              </p>
-            </div>
-          </div>
 
           {/* Date Picker (DD/MM/YYYY) */}
           <div>
