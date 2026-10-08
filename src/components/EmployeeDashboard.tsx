@@ -27,6 +27,13 @@ interface EmployeeDashboardProps {
         sick: { consumed: number; total: number; remaining: number };
       };
     };
+    monthAttendance?: {
+      month?: number;
+      year?: number;
+      monthName?: string;
+      label?: string;
+      presentDays?: number;
+    };
     financialYear?: {
       label?: string;
       fullLabel?: string;
@@ -44,7 +51,10 @@ const EmployeeDashboard = ({ data }: EmployeeDashboardProps) => {
   const navigate = useNavigate();
   const emp = data.employee;
   const fyLabel = data.financialYear?.label || "FY 2026-27";
-  const fyPresentDays = data.financialYear?.presentDays ?? data.currentMonthAttendance;
+  const currentMonthName = new Date().toLocaleString("en-US", { month: "long" });
+  const currentMonthYear = `${currentMonthName} ${new Date().getFullYear()}`;
+  const monthLabel = data.monthAttendance?.label || currentMonthYear;
+  const monthPresentDays = data.monthAttendance?.presentDays ?? data.currentMonthAttendance ?? data.financialYear?.presentDays ?? 0;
 
   const totalLeaveQuota = data.leaveSummary?.totalQuota ?? 35;
   const consumedLeaves = data.leaveSummary?.consumed ?? 0;
@@ -54,9 +64,9 @@ const EmployeeDashboard = ({ data }: EmployeeDashboardProps) => {
   const cards = [
     {
       icon: CalendarIcon,
-      value: fyPresentDays,
-      title: `Days Present (${fyLabel})`,
-      subtitle: "April – March FY cycle",
+      value: monthPresentDays,
+      title: `Days Present (${monthLabel})`,
+      subtitle: `${data.monthAttendance?.monthName || currentMonthName} attendance records`,
       accent: "bg-indigo-500/70 group-hover:bg-indigo-500",
       iconBg: "bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100/80",
       link: "/attendance"
