@@ -25,6 +25,7 @@ const Attendance = () => {
   // Employee state
   const [history, setHistory] = useState([]);
   const [financialYear, setFinancialYear] = useState<any>(null);
+  const [monthAttendance, setMonthAttendance] = useState<any>(null);
   const [lateAllowance, setLateAllowance] = useState<any>(null);
   const [corrections, setCorrections] = useState<CorrectionItem[]>([]);
   const [delegatedCorrections, setDelegatedCorrections] = useState<DelegatedCorrectionItem[]>([]);
@@ -58,6 +59,7 @@ const Attendance = () => {
       const json = res.data;
       setHistory(json.data || []);
       if (json.financialYear) setFinancialYear(json.financialYear);
+      if (json.monthAttendance) setMonthAttendance(json.monthAttendance);
       if (json.lateAllowance) setLateAllowance(json.lateAllowance);
       if (json.employee?.isDeleted) setIsDeleted(true);
       if (json.employee?.isLocationExempt) setIsLocationExempt(true);
@@ -318,7 +320,7 @@ const Attendance = () => {
           )}
 
           {/* Top Stats */}
-          <AttendanceStats history={history} financialYear={financialYear} />
+          <AttendanceStats history={history} financialYear={financialYear} monthAttendance={monthAttendance} />
 
           {/* Attendance History */}
           <AttendanceHistory
