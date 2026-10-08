@@ -1,6 +1,16 @@
 import { AlertCircleIcon, CalendarIcon, ClockIcon, Sparkles } from "lucide-react";
 import { getFinancialYear, getHolidaysForFinancialYear } from "../../constants/marketHolidays";
 
+interface MonthAttendanceData {
+  month?: number;
+  year?: number;
+  monthName?: string;
+  label?: string;
+  presentDays?: number;
+  lateDays?: number;
+  avgHours?: string;
+}
+
 interface FinancialYearData {
   label: string;
   fullLabel?: string;
@@ -13,10 +23,24 @@ interface FinancialYearData {
 interface AttendanceStatsProps {
   history: any[];
   financialYear?: FinancialYearData | null;
+  monthAttendance?: MonthAttendanceData | null;
 }
 
-const AttendanceStats = ({ history = [], financialYear }: AttendanceStatsProps) => {
+const AttendanceStats = ({ history = [], financialYear, monthAttendance }: AttendanceStatsProps) => {
   const fy = getFinancialYear();
+  const now = new Date();
+  const currentMonthName = now.toLocaleString("en-US", { month: "long" });
+  const currentMonthYear = `${currentMonthName} ${now.getFullYear()}`;
+  const monthLabel = monthAttendance?.label || currentMonthYear;
+
+  // Current calendar month date boundaries for month-basis fallback
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const monthHistory = history.filter((h) => {
+    const d = new Date(h.date);
+    return d >= startOfMonth && d <= endOfMonth;
+  });
 
   // Fallback calculation from history if not passed from server
   const fyHistory = history.filter((h) => {
@@ -24,9 +48,12 @@ const AttendanceStats = ({ history = [], financialYear }: AttendanceStatsProps) 
     return d >= fy.startDate && d <= fy.endDate;
   });
 
-  const totalPresent = financialYear?.presentDays !== undefined
+  // Month-basis days present
+  const totalPresent = monthAttendance?.presentDays !== undefined
+    ? monthAttendance.presentDays
+    : financialYear?.presentDays !== undefined
     ? financialYear.presentDays
-    : fyHistory.filter((h) => h.status === "PRESENT" || h.status === "LATE").length;
+    : monthHistory.filter((h) => h.status === "PRESENT" || h.status === "LATE").length;
 
   const totalLate = financialYear?.lateDays !== undefined
     ? financialYear.lateDays
@@ -47,8 +74,8 @@ const AttendanceStats = ({ history = [], financialYear }: AttendanceStatsProps) 
 
   const stats = [
     {
-      label: `Days Present (${fy.label})`,
-      subtitle: "Verified attendance records",
+      label: `Days Present (${monthLabel})`,
+      subtitle: `${monthAttendance?.monthName || currentMonthName} attendance records`,
       value: totalPresent,
       icon: CalendarIcon,
       color: "indigo",
