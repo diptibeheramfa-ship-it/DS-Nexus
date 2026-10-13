@@ -92,6 +92,7 @@ interface EmployeeItem {
   department?: string;
   position?: string;
   employeeCode?: string;
+  isDeleted?: boolean;
 }
 
 interface AttendanceCalendarProps {
@@ -262,7 +263,9 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
           const list = res.data || [];
           setEmployees(list);
           if (list.length > 0 && !selectedEmpId) {
-            setSelectedEmpId(list[0].id || list[0]._id);
+            const firstActive = list.find((e: any) => !e.isDeleted);
+            const target = firstActive || list[0];
+            setSelectedEmpId(target.id || target._id);
           }
         })
         .catch((err) => console.error("Failed to fetch employees for calendar", err));
@@ -1003,23 +1006,41 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
 
           {/* Right Controls: Month/Year selector */}
           <div className="flex flex-wrap items-center gap-2">
-            {employees.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs shrink-0">
-                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <select
-                  value={selectedEmpId}
-                  onChange={(e) => setSelectedEmpId(e.target.value)}
-                  className="!w-auto !py-1 bg-transparent border-none focus:outline-none font-medium text-slate-800 cursor-pointer pr-1"
-                >
-                  {!isAdmin && <option value="">My Attendance</option>}
-                  {employees.map((emp) => (
-                    <option key={emp.id || emp._id} value={emp.id || emp._id}>
-                      {emp.firstName} {emp.lastName} {emp.employeeCode ? `(#${emp.employeeCode})` : ""} - {emp.department || "Employee"}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {employees.length > 0 && (() => {
+              const activeEmps = employees.filter((e) => !e.isDeleted);
+              const deactivatedEmps = employees.filter((e) => e.isDeleted);
+
+              return (
+                <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs shrink-0">
+                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <select
+                    value={selectedEmpId}
+                    onChange={(e) => setSelectedEmpId(e.target.value)}
+                    className="!w-auto !py-1 bg-transparent border-none focus:outline-none font-medium text-slate-800 cursor-pointer pr-1"
+                  >
+                    {!isAdmin && <option value="">My Attendance</option>}
+                    {activeEmps.length > 0 && (
+                      <optgroup label="Active Employees">
+                        {activeEmps.map((emp) => (
+                          <option key={emp.id || emp._id} value={emp.id || emp._id}>
+                            {emp.firstName} {emp.lastName} {emp.employeeCode ? `(#${emp.employeeCode})` : ""} - {emp.department || "Employee"}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {deactivatedEmps.length > 0 && (
+                      <optgroup label="Deactivated Staff">
+                        {deactivatedEmps.map((emp) => (
+                          <option key={emp.id || emp._id} value={emp.id || emp._id}>
+                            {emp.firstName} {emp.lastName} [Deactivated] {emp.employeeCode ? `(#${emp.employeeCode})` : ""} - {emp.department || "Ex-Staff"}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                </div>
+              );
+            })()}
 
             {/* Month Dropdown */}
             <select
