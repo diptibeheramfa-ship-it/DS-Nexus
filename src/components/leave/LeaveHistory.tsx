@@ -17,6 +17,7 @@ interface LeaveItem {
         firstName?: string;
         lastName?: string;
         employeeCode?: string;
+        isDeleted?: boolean;
     };
 }
 
@@ -76,7 +77,7 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                                     <tr key={leave._id || leave.id}>
                                         {showApprovalActions && (
                                             <td className="text-slate-900">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     {leave.employee?.employeeCode && (
                                                         <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">
                                                             #{leave.employee.employeeCode}
@@ -85,6 +86,11 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                                                     <span className="font-semibold truncate">
                                                         {leave.employee?.firstName} {leave.employee?.lastName}
                                                     </span>
+                                                    {leave.employee?.isDeleted && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-300 shrink-0">
+                                                            Deactivated
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                         )}
