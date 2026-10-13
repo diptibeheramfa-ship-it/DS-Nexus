@@ -61,6 +61,7 @@ interface EmployeeOption {
   lastName: string;
   employeeCode?: string;
   department?: string;
+  isDeleted?: boolean;
 }
 
 export const formatName = (name?: string): string => {
@@ -166,11 +167,9 @@ const Incentives: React.FC = () => {
   const fetchEmployees = async () => {
     try {
       const res = await api.get("/employees");
-      if (res.data && Array.isArray(res.data)) {
-        setEmployees(res.data);
-      } else if (res.data?.employees && Array.isArray(res.data.employees)) {
-        setEmployees(res.data.employees);
-      }
+      const list = Array.isArray(res.data) ? res.data : (res.data?.employees || []);
+      // Exclude deactivated employees so they cannot be selected for new incentives
+      setEmployees(list.filter((e: any) => !e.isDeleted));
     } catch (err) {
       console.error("Failed to fetch employees list:", err);
     }
