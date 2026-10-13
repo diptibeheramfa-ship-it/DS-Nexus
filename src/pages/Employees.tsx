@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { Plus, Search, X } from "lucide-react";
 import EmployeeCard from "../components/EmployeeCard.js";
 import EmployeeForm from "../components/EmployeeForm.js";
@@ -20,6 +20,7 @@ const Employees = () => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "DEACTIVATED" | "ALL">("ACTIVE");
   const [selectedDept, setSelectedDept] = useState(searchParams.get("department") || "");
   const [editEmployee, setEditEmployee] = useState<any>(null);
   const [showCreateModel, setShowCreateModel] = useState(false);
@@ -40,23 +41,88 @@ const Employees = () => {
     fetchEmployees();
   }, [fetchEmployees])
 
-  const filtered = employees.filter((emp) =>
-    `${emp.employeeCode || ''} ${emp.firstName || emp.firstname || ''} ${emp.lastName || ''} ${emp.position || ''}`
+  const counts = useMemo(() => {
+    const active = employees.filter((e) => !e.isDeleted).length;
+    const deactivated = employees.filter((e) => e.isDeleted).length;
+    return { active, deactivated, all: employees.length };
+  }, [employees]);
+
+  const filtered = employees.filter((emp) => {
+    const matchesSearch = `${emp.employeeCode || ''} ${emp.firstName || emp.firstname || ''} ${emp.lastName || ''} ${emp.position || ''}`
       .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+      .includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "ACTIVE") return !emp.isDeleted;
+    if (statusFilter === "DEACTIVATED") return Boolean(emp.isDeleted);
+    return true;
+  });
 
   return (
     <div className="animate-fade-in">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="page-title">Employees</h1>
           <p className="page-subtitle">Manage your Team members</p>
         </div>
         <button onClick={() => setShowCreateModel(true)} className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center">
           <Plus size={16} /> Add Employee
+        </button>
+      </div>
+
+      {/* Status Filter Tabs */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 sm:pb-0">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("ACTIVE")}
+          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            statusFilter === "ACTIVE"
+              ? "bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20"
+              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300"
+          }`}
+        >
+          <span>Active Staff</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+            statusFilter === "ACTIVE" ? "bg-emerald-700/80 text-emerald-100" : "bg-slate-100 text-slate-600"
+          }`}>
+            {counts.active}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter("DEACTIVATED")}
+          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            statusFilter === "DEACTIVATED"
+              ? "bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/20"
+              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300"
+          }`}
+        >
+          <span>Deactivated</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+            statusFilter === "DEACTIVATED" ? "bg-rose-700/80 text-rose-100" : "bg-slate-100 text-slate-600"
+          }`}>
+            {counts.deactivated}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setStatusFilter("ALL")}
+          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+            statusFilter === "ALL"
+              ? "bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20"
+              : "bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300"
+          }`}
+        >
+          <span>All</span>
+          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+            statusFilter === "ALL" ? "bg-indigo-700/80 text-indigo-100" : "bg-slate-100 text-slate-600"
+          }`}>
+            {counts.all}
+          </span>
         </button>
       </div>
 
