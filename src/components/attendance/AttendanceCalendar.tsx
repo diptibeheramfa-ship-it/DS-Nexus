@@ -93,6 +93,9 @@ interface EmployeeItem {
   position?: string;
   employeeCode?: string;
   isDeleted?: boolean;
+  deactivationDate?: string | Date;
+  employmentStatus?: string;
+  updatedAt?: string | Date;
 }
 
 interface AttendanceCalendarProps {
@@ -236,6 +239,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
     holiday: HolidayItem | null;
     record: AttendanceRecord | null;
     reminders: AdminReminderItem[];
+    isInactive?: boolean;
   } | null>(null);
 
   // Task Create / Edit Modal State
@@ -830,12 +834,27 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
     const isDayAndPunchCompleted = isPastDay || (isToday && isCurrentTimeAfterShift);
     const hasPunches = !!(record && (record.checkIn || (record.punches && record.punches.length > 0)));
 
+    const selectedEmp = employees.find((e) => (e.id || e._id) === selectedEmpId);
+    const isDeactivatedEmployee = Boolean(selectedEmp?.isDeleted || selectedEmp?.employmentStatus === "INACTIVE");
+    let isInactiveDay = false;
+    if (isDeactivatedEmployee) {
+      const deactDateVal = selectedEmp?.deactivationDate || selectedEmp?.updatedAt;
+      if (deactDateVal) {
+        const d = new Date(deactDateVal);
+        const deactDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        if (dateStr >= deactDateStr) {
+          isInactiveDay = true;
+        }
+      }
+    }
+
     // Absent conditions:
-    // 1. Unpunched day: workday must be completed (past day or today after 18:00), no punches, no leave, and no correction
-    const isUnexcusedAbsent = !isWeekend && !isHoliday && isDayAndPunchCompleted && !hasPunches && !leave && !correction;
+    // 1. Unpunched day: workday must be completed (past day or today after 18:00), no punches, no leave, no correction, and not inactive
+    const isUnexcusedAbsent = !isInactiveDay && !isWeekend && !isHoliday && isDayAndPunchCompleted && !hasPunches && !leave && !correction;
     // 2. Punched late cutoff (Tier 3): employee punched in after 10:30 AM cutoff and was marked absent
     const isAbsentWithPunches = hasPunches && record?.status === "ABSENT";
     const isAbsent = isUnexcusedAbsent || isAbsentWithPunches;
+    const isInactive = isInactiveDay && !hasPunches && !leave && !correction;
 
     gridCells.push({
       isPadding: false,
@@ -852,6 +871,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
       isPastDay,
       isDayAndPunchCompleted,
       isAbsent,
+      isInactive,
       dayName: currentDateObj.toLocaleDateString("en-US", { weekday: "short" }),
       key: `day-${day}`,
     });
@@ -1273,6 +1293,15 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                       <span className="truncate">{isApproved ? "Regularized" : "Pending"}</span>
                     </span>
                   );
+                } else if (cell.isInactive) {
+                  statusBadge = (
+                    <span
+                      title="Deactivated / Inactive"
+                      className="inline-flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300 shadow-2xs max-w-full min-w-0"
+                    >
+                      <span className="truncate">Inactive</span>
+                    </span>
+                  );
                 } else if (cell.isAbsent) {
                   statusBadge = (
                     <span
@@ -1308,7 +1337,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                     key={cell.key}
                     onClick={() => {
                       const isPunched = !!(cell.record && (cell.record.checkIn || (cell.record.punches && cell.record.punches.length > 0)));
-                      const shouldShowRecord = isPunched || cell.isAbsent;
+                      const shouldShowRecord = isPunched || (!cell.isInactive && cell.isAbsent);
                       setSelectedDateDetail({
                         dateStr: cell.dateStr!,
                         dayName: cell.dayName!,
@@ -1327,6 +1356,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                           requiresCorrection: true,
                         }) : null,
                         reminders: allCellTasks,
+                        isInactive: cell.isInactive ?? false,
                       });
                     }}
                     className={`min-h-[125px] p-1.5 sm:p-2 rounded-xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group hover:shadow-md relative overflow-hidden max-w-full ${
@@ -1342,6 +1372,8 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                         ? "bg-gradient-to-br from-purple-50/90 via-indigo-50/40 to-purple-50/30 border-purple-300/80 hover:border-purple-400 shadow-2xs ring-1 ring-purple-500/10"
                         : cell.isWeekend
                         ? "bg-slate-50/70 border-slate-200/70"
+                        : cell.isInactive
+                        ? "bg-slate-50/80 border-slate-200/80 hover:border-slate-300"
                         : cell.isAbsent
                         ? "bg-rose-50/70 border-rose-300/80 hover:border-rose-400 hover:bg-rose-100/50 shadow-2xs ring-1 ring-rose-500/15"
                         : isLateArrivalRecord(rec)
@@ -1370,6 +1402,8 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                               ? "bg-purple-600 text-white shadow-2xs font-extrabold"
                               : cell.isWeekend
                               ? "text-slate-400"
+                              : cell.isInactive
+                              ? "bg-slate-100 text-slate-500 font-bold border border-slate-200"
                               : cell.isAbsent
                               ? "bg-rose-100 text-rose-700 font-extrabold border border-rose-300"
                               : isLateArrivalRecord(rec)
@@ -1459,6 +1493,12 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                           {cell.holiday?.name}
                         </p>
                       </div>
+                    ) : cell.isInactive ? (
+                      <div className="mt-1 min-w-0 overflow-hidden">
+                        <p className="text-[9px] font-semibold text-slate-500 truncate">
+                          Account Inactive
+                        </p>
+                      </div>
                     ) : cell.isAbsent ? (
                       <div className="mt-1 min-w-0 overflow-hidden">
                         <p className="text-[9px] font-semibold text-rose-700 truncate">
@@ -1522,6 +1562,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                                 holiday: cell.holiday || null,
                                 record: cell.record || null,
                                 reminders: allCellTasks,
+                                isInactive: cell.isInactive ?? false,
                               });
                             }}
                             className="w-full text-left px-1 py-0.5 text-[8px] sm:text-[9px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors truncate"
@@ -1672,7 +1713,9 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                   if (!hasAttendance) {
                     return (
                       <p className="text-xs text-slate-500">
-                        {selectedDateDetail.holiday
+                        {selectedDateDetail.isInactive
+                          ? "Employee account inactive on and after this date."
+                          : selectedDateDetail.holiday
                           ? "Off day on account of official market holiday."
                           : selectedDateDetail.isWeekend
                           ? "Sunday / Weekly off-day."
@@ -2067,7 +2110,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
             {/* Modal Footer */}
             <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 shrink-0">
               <div className="flex flex-wrap items-center gap-2">
-                {(isModalMissingPunch || selectedDateDetail.record?.status === "ABSENT" || selectedDateDetail.record?.requiresCorrection) && (
+                {(!selectedDateDetail.isInactive && (isModalMissingPunch || selectedDateDetail.record?.status === "ABSENT" || selectedDateDetail.record?.requiresCorrection)) && (
                   (() => {
                     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                     const isTodayOrFuture = selectedDateDetail.dateStr >= todayStr;
@@ -2107,7 +2150,7 @@ const AttendanceCalendar = ({ isAdmin = false, onApplyCorrection, onApplyLeave }
                     return null;
                   })()
                 )}
-                {(selectedDateDetail.record?.status === "ABSENT" || selectedDateDetail.record?.requiresCorrection) && onApplyLeave && (
+                {(!selectedDateDetail.isInactive && (selectedDateDetail.record?.status === "ABSENT" || selectedDateDetail.record?.requiresCorrection)) && onApplyLeave && (
                   <button
                     onClick={() => {
                       const dStr = selectedDateDetail.dateStr;
