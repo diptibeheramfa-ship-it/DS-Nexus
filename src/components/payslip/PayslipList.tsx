@@ -74,7 +74,16 @@ const PayslipList = ({ payslips, isAdmin, onDeleteSuccess }: PayslipListProps) =
                                         <tr key={id}>
                                             {isAdmin && (
                                                 <td className="text-slate-900 font-medium">
-                                                    {payslip.employee?.firstName} {payslip.employee?.lastName}
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span>
+                                                            {payslip.employee?.firstName} {payslip.employee?.lastName}
+                                                        </span>
+                                                        {payslip.employee?.isDeleted && (
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-300 shrink-0">
+                                                                Deactivated
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             )}
                                             <td className="text-slate-700 font-semibold">
