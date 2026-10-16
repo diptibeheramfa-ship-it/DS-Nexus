@@ -1,8 +1,9 @@
 import { format } from "date-fns"
-import { Check, Loader2, X } from "lucide-react"
+import { Check, Edit2, Loader2, X } from "lucide-react"
 import { useState } from "react"
 import api from "../../api/axios"
 import toast from "react-hot-toast"
+import EditLeaveModal from "./EditLeaveModal"
 
 interface LeaveItem {
     _id?: string;
@@ -30,7 +31,8 @@ interface LeaveHistoryProps {
 
 const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHistoryProps) => {
 
-    const [processing, setProcessing] = useState<string | null>(null)
+    const [processing, setProcessing] = useState<string | null>(null);
+    const [editingLeave, setEditingLeave] = useState<LeaveItem | null>(null);
     const showApprovalActions = isAdmin || canApprove;
 
     const handleStatusUpdate = async (id: string, status: string) => {
@@ -58,13 +60,13 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                             <th>Duration</th>
                             <th>Reason</th>
                             <th>Status</th>
-                            {showApprovalActions && <th className="text-center">Actions</th>}
+                            <th className="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {leaves.length === 0 ? (
                             <tr>
-                                <td colSpan={showApprovalActions ? 7 : 5} className="text-center py-12 text-slate-400">
+                                <td colSpan={showApprovalActions ? 7 : 6} className="text-center py-12 text-slate-400">
                                     No leave applications found
                                 </td>
                             </tr>
@@ -76,7 +78,7 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                                 return (
                                     <tr key={leave._id || leave.id}>
                                         {showApprovalActions && (
-                                            <td className="text-slate-900">
+                                             <td className="text-slate-900">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     {leave.employee?.employeeCode && (
                                                         <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">
@@ -113,20 +115,40 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                                                 {leave.status}
                                             </span>
                                         </td>
-                                        {showApprovalActions && (
-                                            <td>
-                                                {leave.status === "PENDING" && (
-                                                    <div className="flex justify-center gap-2">
-                                                        <button onClick={() => handleStatusUpdate((leave._id || leave.id)!, "APPROVED")} disabled={!!processing} className="p-1.5 rounded-md bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
-                                                            {processing === (leave._id || leave.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                                        <td className="text-center">
+                                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditingLeave(leave)}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/80 transition-colors shadow-2xs cursor-pointer"
+                                                    title="Rectify / Edit Leave Application"
+                                                >
+                                                    <Edit2 className="w-3.5 h-3.5" />
+                                                    <span>Edit</span>
+                                                </button>
+
+                                                {showApprovalActions && leave.status === "PENDING" && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleStatusUpdate((leave._id || leave.id)!, "APPROVED")}
+                                                            disabled={!!processing}
+                                                            title="Approve Leave"
+                                                            className="p-1 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                                                        >
+                                                            {processing === (leave._id || leave.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                                                         </button>
-                                                        <button onClick={() => handleStatusUpdate((leave._id || leave.id)!, "REJECTED")} disabled={!!processing} className="p-1.5 rounded-md bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors">
-                                                            {processing === (leave._id || leave.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                                        <button
+                                                            onClick={() => handleStatusUpdate((leave._id || leave.id)!, "REJECTED")}
+                                                            disabled={!!processing}
+                                                            title="Reject Leave"
+                                                            className="p-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer"
+                                                        >
+                                                            {processing === (leave._id || leave.id) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
                                                         </button>
-                                                    </div>
+                                                    </>
                                                 )}
-                                            </td>
-                                        )}
+                                            </div>
+                                        </td>
                                     </tr>
                                 )
                             })
@@ -134,7 +156,17 @@ const LeaveHistory = ({ leaves, isAdmin, canApprove = false, onUpdate }: LeaveHi
                     </tbody>
                 </table>
             </div>
-        </div >
+
+            <EditLeaveModal
+                open={!!editingLeave}
+                leave={editingLeave}
+                onClose={() => setEditingLeave(null)}
+                onSuccess={() => {
+                    setEditingLeave(null);
+                    onUpdate();
+                }}
+            />
+        </div>
     )
 }
 
