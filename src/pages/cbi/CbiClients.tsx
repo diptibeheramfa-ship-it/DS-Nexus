@@ -1241,20 +1241,6 @@ const CbiClients: React.FC = () => {
                           >
                             <Eye className="size-3.5" />
                           </button>
-                          <button
-                            onClick={() => navigate(`/cbi/onboarding?clientId=${client._id}`)}
-                            className="p-1.5 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
-                            title="Stage 2: Onboard Client (Single Source of Truth)"
-                          >
-                            <UserPlus className="size-3.5" />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/cbi/portfolio-review?clientId=${client._id}`)}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                            title="Stage 3: Portfolio Review"
-                          >
-                            <UserCheck className="size-3.5" />
-                          </button>
                           {canEdit && (
                             <button
                               onClick={() => handleOpenEditModal(client)}
